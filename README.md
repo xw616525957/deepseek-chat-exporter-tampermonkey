@@ -29,10 +29,87 @@
 
 ## 使用方式
 
+### 方式一：直接安装 `user.js`
+
+1. 安装浏览器扩展 Tampermonkey
+2. 打开仓库中的 `user.js`
+3. 点击 GitHub 页面右上角的 `Raw`
+4. 浏览器会自动唤起 Tampermonkey 安装页
+5. 点击安装即可
+
+如果你已经把仓库发布到了 GitHub，建议将下面这个 Raw 链接放到 README 或仓库说明中，方便其他用户直接安装：
+
+```text
+https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+```
+
+用户也可以直接访问这个地址进行安装。
+
+### 方式二：手动安装
+
 1. 安装浏览器扩展 Tampermonkey
 2. 新建一个用户脚本
-3. 将 [`user.js`](/Users/xuwei/Documents/code/ai/chatgpt-exporter/user.js) 内容粘贴进去并保存
-4. 打开 DeepSeek 聊天页面刷新后使用
+3. 将 `user.js` 文件内容全部复制进去
+4. 保存脚本
+5. 打开 DeepSeek 聊天页面并刷新
+
+## 如何让其他用户下载
+
+推荐让其他用户通过下面两种方式获取脚本：
+
+1. 进入仓库后打开 `user.js`，点击 `Raw` 安装
+2. 直接访问 Raw 链接安装
+
+推荐分享地址：
+
+```text
+仓库主页：
+https://github.com/xw616525957/deepseek-chat-exporter-tampermonkey
+
+脚本直链：
+https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+```
+
+## Tampermonkey 版本管理与自动更新
+
+Tampermonkey 可以利用脚本头部的更新地址自动检查新版本。当前 `user.js` 中已经包含：
+
+- `@version`
+- `@downloadURL`
+- `@updateURL`
+
+如果你希望这个仓库成为后续维护版本的正式分发源，建议把脚本头里的这两个地址改成你自己的仓库地址：
+
+```javascript
+// @downloadURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+// @updateURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+```
+
+这样做之后，其他用户只要通过你的仓库安装过一次脚本，后续你每次提升 `@version` 并推送更新，Tampermonkey 就可以检测到新版本。
+
+### 用户如何检查更新
+
+其他用户安装脚本后，可以通过 Tampermonkey 使用以下方式更新：
+
+1. 打开 Tampermonkey 控制面板
+2. 找到当前脚本
+3. 点击“检查更新”
+4. 如果远程版本号更高，Tampermonkey 会提示安装新版本
+
+### 维护者如何发布新版本
+
+每次更新建议按下面流程操作：
+
+1. 修改 `user.js`
+2. 更新脚本头部的 `@version`
+3. 提交并 push 到 GitHub
+4. 用户在 Tampermonkey 中执行“检查更新”，或等待自动检测
+
+### 注意
+
+如果 `@downloadURL` 和 `@updateURL` 仍然指向原脚本发布地址，那么用户后续检查更新时，拿到的仍然会是原作者发布的版本，而不是你这个仓库的维护版本。
+
+因此，如果你希望这个仓库承担持续分发职责，下一步应该把 `user.js` 头部这两个地址切换到你自己的 Raw 链接。
 
 ## 适用场景
 

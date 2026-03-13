@@ -2,7 +2,7 @@
 // @name         DeepSeek & Doubao Chat to word | image
 // @name:zh-CN   DeepSeek & 豆包 对话导出增强
 // @namespace    http://tampermonkey.net/
-// @version      1.8
+// @version      1.8.1
 // @description  Enhances DeepSeek & Doubao Chat to export conversations as Word documents and generate beautiful knowledge cards. Adds buttons for single messages and global controls to process multiple selected messages.
 // @description:zh-CN 增强 DeepSeek & 豆包 Chat，轻松将对话导出为 Word 文档或生成精美的知识卡片。为每条消息添加独立操作按钮，并通过侧边栏全局控件，批量处理勾选的多条消息。
 // @author       licc168
@@ -15,8 +15,8 @@
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
 // @grant        GM_log
-// @downloadURL https://update.greasyfork.org/scripts/538567/DeepSeek%20%20Doubao%20Chat%20to%20word%20%7C%20image.user.js
-// @updateURL https://update.greasyfork.org/scripts/538567/DeepSeek%20%20Doubao%20Chat%20to%20word%20%7C%20image.meta.js
+// @downloadURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+// @updateURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
 // ==/UserScript==
  
  
