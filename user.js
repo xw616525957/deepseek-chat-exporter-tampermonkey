@@ -2,7 +2,7 @@
 // @name         DeepSeek & Doubao Chat to word | image
 // @name:zh-CN   DeepSeek & 豆包 对话导出增强
 // @namespace    http://tampermonkey.net/
-// @version      1.7
+// @version      1.8
 // @description  Enhances DeepSeek & Doubao Chat to export conversations as Word documents and generate beautiful knowledge cards. Adds buttons for single messages and global controls to process multiple selected messages.
 // @description:zh-CN 增强 DeepSeek & 豆包 Chat，轻松将对话导出为 Word 文档或生成精美的知识卡片。为每条消息添加独立操作按钮，并通过侧边栏全局控件，批量处理勾选的多条消息。
 // @author       licc168
@@ -119,6 +119,27 @@
         }
         return { label: font.label, value: shortValue };
     });
+
+    const deepSeekMessageWrapperSelectors = [
+        '.ds-message',
+        '[data-testid="user_message"]',
+        '[data-testid="receive_message"]',
+        '.chat-message-item',
+        '.message-container',
+        'div[class*="message-bubble"]',
+        'div[class*="message-container"]',
+    ];
+    const deepSeekContentSelectors = [
+        '.ds-markdown.ds-markdown--block:not(:empty)',
+        '.ds-markdown:not(:empty)',
+        '[data-testid="message_text_content"]:not(:empty)',
+        '[class*="message-text"]:not(:empty)',
+        '[class*="message-content"]:not(:empty)',
+        '[class*="bubble-content"]:not(:empty)',
+        '[class*="user-message"]:not(:empty)',
+    ];
+    const deepSeekMessageWrapperSelector = deepSeekMessageWrapperSelectors.join(', ');
+    const deepSeekContentSelector = deepSeekContentSelectors.join(', ');
  
  
     // --- Add Styles ---
@@ -910,8 +931,104 @@
             findAndProcessTargetButtons_Doubao();
         }
     }
- 
+
     // --- Helper functions for content extraction ---
+    function isInsideInjectedUi(element) {
+        return !!element?.closest('.gm-message-checkbox-container, .gm-card-modal-overlay, #gm-floating-action-panel');
+    }
+
+    function getDeepSeekPlainTextContent(wrapper) {
+        if (!(wrapper instanceof Element)) return '';
+
+        const textCandidates = [];
+        const pushText = (element) => {
+            if (!(element instanceof Element) || isInsideInjectedUi(element)) return;
+            if (element.closest('.ds-flex')?.querySelector('.ds-icon-button')) return;
+
+            const text = (element.innerText || element.textContent || '').trim();
+            if (!text) return;
+
+            textCandidates.push(text);
+        };
+
+        const explicitTextSelectors = [
+            '[data-testid="message_text_content"]',
+            '[class*="message-text"]',
+            '[class*="message-content"]',
+            '[class*="bubble-content"]',
+            '[class*="user-message"]',
+        ];
+        wrapper.querySelectorAll(explicitTextSelectors.join(', ')).forEach(pushText);
+
+        if (textCandidates.length === 0) {
+            const directChildren = Array.from(wrapper.children || []);
+            directChildren.forEach(child => {
+                if (!(child instanceof Element)) return;
+                if (child.classList.contains('gm-message-checkbox-container')) return;
+                if (child.querySelector('.ds-icon-button')) return;
+                if (child.querySelector(deepSeekContentSelector)) return;
+
+                pushText(child);
+            });
+        }
+
+        return textCandidates.find(Boolean) || '';
+    }
+
+    function hasDeepSeekMessageContent(wrapper) {
+        if (!(wrapper instanceof Element)) return false;
+        if (wrapper.querySelector(deepSeekContentSelector)) return true;
+        return !!getDeepSeekPlainTextContent(wrapper);
+    }
+
+    function getDeepSeekMessageWrappers() {
+        const wrapperSet = new Set();
+        const addWrapper = (element) => {
+            if (!(element instanceof Element) || isInsideInjectedUi(element)) return;
+            if (!element.matches(deepSeekMessageWrapperSelector)) return;
+            if (!hasDeepSeekMessageContent(element)) return;
+            wrapperSet.add(element);
+        };
+
+        document.querySelectorAll(deepSeekMessageWrapperSelector).forEach(addWrapper);
+        document.querySelectorAll(deepSeekContentSelector).forEach(contentElement => {
+            addWrapper(contentElement.closest(deepSeekMessageWrapperSelector));
+        });
+
+        return Array.from(wrapperSet).filter(wrapper => {
+            for (const candidate of wrapperSet) {
+                if (candidate !== wrapper && candidate.contains(wrapper)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
+    function getDeepSeekContentBlocks(wrapper) {
+        if (!(wrapper instanceof Element)) return [];
+
+        const blockSet = new Set();
+        wrapper.querySelectorAll(deepSeekContentSelector).forEach(block => {
+            if (!(block instanceof Element) || isInsideInjectedUi(block)) return;
+            if (block.closest('.ds-flex')?.querySelector('.ds-icon-button')) return;
+
+            const text = (block.innerText || block.textContent || '').trim();
+            if (!text) return;
+
+            blockSet.add(block);
+        });
+
+        return Array.from(blockSet).filter(block => {
+            for (const candidate of blockSet) {
+                if (candidate !== block && candidate.contains(block)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
     function getCopyButtonFromMessageWrapper(wrapper) {
         if (onDeepSeek) {
             const svgPath = wrapper.querySelector('div.ds-icon-button svg path[d^="M3.65169"]');
@@ -926,9 +1043,20 @@
     function getMarkdownFromMessageWrapper(wrapper) {
         let contentElement;
         if (onDeepSeek) {
-            contentElement = wrapper.querySelector('div.ds-markdown.ds-markdown--block:not(:empty)');
-            if (contentElement) return htmlToMarkdown(contentElement);
- 
+            const contentBlocks = getDeepSeekContentBlocks(wrapper);
+            if (contentBlocks.length > 0) {
+                return contentBlocks
+                    .map(block => htmlToMarkdown(block))
+                    .map(text => text.trim())
+                    .filter(Boolean)
+                    .join('\n\n');
+            }
+
+            const plainTextContent = getDeepSeekPlainTextContent(wrapper);
+            if (plainTextContent) {
+                return plainTextContent;
+            }
+
             // Fallback for DeepSeek's complex structure
             const children = Array.from(wrapper.children || []);
             for (const child of children) {
@@ -1381,70 +1509,22 @@
     }
  
     function addCheckboxesToMessages_DeepSeek() {
-        // 查找所有可能的对话内容区域
-        // 提问部分：在ds-flex节点的上级的上级的前面兄弟节点中查找内容
-        // 回答部分：在ds-flex节点的上级的前面兄弟节点中查找内容
-        const flexElements = document.querySelectorAll('.ds-flex');
- 
-        flexElements.forEach(flexEl => {
-            // 跳过已经处理过的对话区域
-            const processedParent = flexEl.closest('.gm-message-item-for-checkbox');
-            if (processedParent) {
+        getDeepSeekMessageWrappers().forEach(messageWrapper => {
+            if (messageWrapper.querySelector(':scope > .gm-message-checkbox-container')) {
                 return;
             }
- 
-            // 检查是否是有效的对话操作区域
-            const actionButtons = flexEl.querySelectorAll('.ds-icon-button');
-            if (actionButtons.length < 2) {
-                return; // 不是我们要找的操作区域
-            }
- 
-            let messageWrapper = null;
-            let contentElement = null;
- 
-            // 检查是否是回答部分 - 回答部分的flex直接父级是对话容器
-            const parentElement = flexEl.parentElement;
-            if (parentElement) {
-                const markdownElement = parentElement.querySelector('.ds-markdown.ds-markdown--block');
-                if (markdownElement && !markdownElement.contains(flexEl)) {
-                    messageWrapper = parentElement;
-                    contentElement = markdownElement;
-                }
-            }
- 
-            // 检查是否是提问部分 - 提问部分需要往上查找两级，然后查找前面的兄弟节点
-            if (!messageWrapper) {
-                const grandParent = flexEl.parentElement?.parentElement;
-                if (grandParent) {
-                    // 在提问部分，内容通常在祖父节点的前一个兄弟节点中
-                    const prevSibling = grandParent.previousElementSibling;
-                    if (prevSibling) {
-                        messageWrapper = prevSibling.parentElement;
-                        contentElement = prevSibling;
-                    }
-                }
-            }
- 
-            // 如果找到了对话容器和内容元素
-            if (messageWrapper && contentElement) {
-                // 确保没有重复添加
-                if (messageWrapper.querySelector('.gm-message-checkbox-container')) {
-                    return;
-                }
- 
-                // 添加标记类
-                messageWrapper.classList.add('gm-message-item-for-checkbox');
- 
-                const container = document.createElement('div');
-                container.className = 'gm-message-checkbox-container';
- 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'gm-message-checkbox';
- 
-                container.appendChild(checkbox);
-                messageWrapper.prepend(container); // 添加到对话容器的开始位置
-            }
+
+            messageWrapper.classList.add('gm-message-item-for-checkbox');
+
+            const container = document.createElement('div');
+            container.className = 'gm-message-checkbox-container';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'gm-message-checkbox';
+
+            container.appendChild(checkbox);
+            messageWrapper.prepend(container);
         });
     }
  
@@ -1536,8 +1616,10 @@
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         // 检查新增节点是否包含内容元素或操作按钮
                         if (node.querySelector && (
+                            node.matches?.('.ds-message') ||
                             node.querySelector('.ds-flex') ||
                             node.querySelector('.ds-markdown.ds-markdown--block') ||
+                            node.querySelector('.ds-message') ||
                             node.querySelector('.ds-icon-button')
                         )) {
                             needsCheckboxUpdate = true;
