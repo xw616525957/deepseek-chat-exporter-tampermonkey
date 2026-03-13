@@ -15,8 +15,8 @@
 // @grant        GM_getValue
 // @grant        GM_xmlhttpRequest
 // @grant        GM_log
-// @downloadURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
-// @updateURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/user.js
+// @downloadURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/deepseek-chat-exporter.user.js
+// @updateURL https://raw.githubusercontent.com/xw616525957/deepseek-chat-exporter-tampermonkey/master/deepseek-chat-exporter.meta.js
 // ==/UserScript==
  
  

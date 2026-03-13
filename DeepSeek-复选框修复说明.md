@@ -26,7 +26,7 @@
 
 ## 修改文件
 
-- `user.js`
+- `deepseek-chat-exporter.user.js`
 
 ## 关键修改点
 
@@ -76,14 +76,14 @@
 已执行静态语法校验：
 
 ```bash
-node --check user.js
+node --check deepseek-chat-exporter.user.js
 ```
 
 结果通过，无语法错误。
 
 ## 手工验证建议
 
-在 Tampermonkey 中重新加载 `user.js` 后，打开 DeepSeek 对话页，验证以下场景：
+在 Tampermonkey 中重新加载 `deepseek-chat-exporter.user.js` 后，打开 DeepSeek 对话页，验证以下场景：
 
 1. 用户提问消息左侧有复选框。
 2. 模型正式回复左侧有复选框。
